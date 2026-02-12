@@ -1,0 +1,142 @@
+<div class="prompt-playground">
+  <div class="playground-header">
+    <h1>Prompt Playground</h1>
+    <p>Experiment with different models, prompts, and parameters</p>
+  </div>
+
+  <div class="playground-container">
+    <!-- Configuration Panel -->
+    <mat-card class="config-panel">
+      <mat-card-header>
+        <mat-card-title>Configuration</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="config-form">
+          <mat-form-field appearance="outline">
+            <mat-label>Model</mat-label>
+            <mat-select [(ngModel)]="selectedModel">
+              @for (model of availableModels; track model.name) {
+                <mat-option [value]="model.name">
+                  {{ model.displayName }} ({{ model.provider }})
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <div class="slider-group">
+            <label>Temperature: {{ formatTemperature(temperature) }}</label>
+            <mat-slider min="0" max="2" step="0.1" discrete>
+              <input matSliderThumb [(ngModel)]="temperature">
+            </mat-slider>
+            <span class="slider-hint">Controls randomness (0 = deterministic, 2 = creative)</span>
+          </div>
+
+          <div class="slider-group">
+            <label>Max Tokens: {{ maxTokens }}</label>
+            <mat-slider min="100" max="4000" step="100" discrete>
+              <input matSliderThumb [(ngModel)]="maxTokens">
+            </mat-slider>
+            <span class="slider-hint">Maximum length of the response</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Prompt Input -->
+    <mat-card class="prompt-card">
+      <mat-card-header>
+        <mat-card-title>Prompt</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-form-field appearance="outline" class="prompt-field">
+          <mat-label>Enter your prompt</mat-label>
+          <textarea
+            matInput
+            [(ngModel)]="prompt"
+            rows="8"
+            placeholder="Type your prompt here..."
+            [disabled]="loading()"
+          ></textarea>
+        </mat-form-field>
+
+        <div class="prompt-actions">
+          <button mat-raised-button color="primary" (click)="executePrompt()" [disabled]="!prompt.trim() || loading()">
+            @if (loading()) {
+              <mat-spinner diameter="20"></mat-spinner>
+              <span>Executing...</span>
+            } @else {
+              <mat-icon>play_arrow</mat-icon>
+              <span>Execute</span>
+            }
+          </button>
+          <button mat-stroked-button (click)="clearPrompt()" [disabled]="loading()">
+            <mat-icon>clear</mat-icon>
+            <span>Clear</span>
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Response Display -->
+    @if (currentExecution()) {
+      <mat-card class="response-card">
+        <mat-card-header>
+          <mat-card-title>Response</mat-card-title>
+          <button mat-icon-button (click)="copyResponse()" matTooltip="Copy response">
+            <mat-icon>content_copy</mat-icon>
+          </button>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="response-content">
+            {{ currentExecution()!.response }}
+          </div>
+
+          <div class="response-metadata">
+            <mat-chip-set>
+              <mat-chip>
+                <mat-icon>schedule</mat-icon>
+                {{ currentExecution()!.latency }}ms
+              </mat-chip>
+              <mat-chip>
+                <mat-icon>token</mat-icon>
+                {{ currentExecution()!.tokens.total }} tokens
+              </mat-chip>
+              <mat-chip>
+                <mat-icon>smart_toy</mat-icon>
+                {{ currentExecution()!.model }}
+              </mat-chip>
+            </mat-chip-set>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Execution History -->
+    @if (executionHistory().length > 0) {
+      <mat-card class="history-card">
+        <mat-card-header>
+          <mat-card-title>Recent Executions</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="history-list">
+            @for (execution of executionHistory(); track execution.id) {
+              <div class="history-item" (click)="loadFromHistory(execution)">
+                <div class="history-item-header">
+                  <span class="history-prompt">{{ execution.prompt.slice(0, 60) }}...</span>
+                  <button mat-icon-button (click)="deleteFromHistory(execution.id, $event)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+                <div class="history-item-meta">
+                  <span>{{ execution.model }}</span>
+                  <span>{{ execution.timestamp | date:'short' }}</span>
+                  <span>{{ execution.latency }}ms</span>
+                </div>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+</div>

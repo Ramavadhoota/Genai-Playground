@@ -1,0 +1,28 @@
+<div class="app-container">
+  <mat-toolbar class="app-toolbar">
+    <div class="toolbar-content">
+      <div class="toolbar-logo">
+        <mat-icon class="logo-icon">psychology</mat-icon>
+        <span class="logo-text">{{ title }}</span>
+      </div>
+      
+      <nav class="toolbar-nav">
+        @for (item of navItems; track item.path) {
+          <a 
+            mat-button 
+            [routerLink]="item.path" 
+            routerLinkActive="active-link"
+            class="nav-link"
+          >
+            <mat-icon>{{ item.icon }}</mat-icon>
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      </nav>
+    </div>
+  </mat-toolbar>
+
+  <main class="app-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

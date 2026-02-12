@@ -1,0 +1,203 @@
+<div class="evaluation-dashboard">
+  <div class="dashboard-header">
+    <h1>Evaluation Dashboard</h1>
+    <p>Track your AI experimentation metrics and usage</p>
+  </div>
+
+  <div class="dashboard-container">
+    <!-- Key Metrics -->
+    <div class="metrics-grid">
+      <mat-card class="metric-card">
+        <mat-card-content>
+          <div class="metric-icon">
+            <mat-icon>play_circle_outline</mat-icon>
+          </div>
+          <div class="metric-value">{{ stats().totalExecutions }}</div>
+          <div class="metric-label">Total Executions</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card">
+        <mat-card-content>
+          <div class="metric-icon">
+            <mat-icon>chat</mat-icon>
+          </div>
+          <div class="metric-value">{{ stats().totalConversations }}</div>
+          <div class="metric-label">Conversations</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card">
+        <mat-card-content>
+          <div class="metric-icon">
+            <mat-icon>compare_arrows</mat-icon>
+          </div>
+          <div class="metric-value">{{ stats().totalComparisons }}</div>
+          <div class="metric-label">Comparisons</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card">
+        <mat-card-content>
+          <div class="metric-icon">
+            <mat-icon>token</mat-icon>
+          </div>
+          <div class="metric-value">{{ stats().totalTokensUsed | number }}</div>
+          <div class="metric-label">Total Tokens</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card">
+        <mat-card-content>
+          <div class="metric-icon">
+            <mat-icon>schedule</mat-icon>
+          </div>
+          <div class="metric-value">{{ stats().averageLatency }}ms</div>
+          <div class="metric-label">Avg Latency</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card">
+        <mat-card-content>
+          <div class="metric-icon">
+            <mat-icon>trending_up</mat-icon>
+          </div>
+          <div class="metric-value">{{ getAverageTokensPerExecution() }}</div>
+          <div class="metric-label">Avg Tokens/Exec</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Model Usage -->
+    <mat-card class="model-usage-card">
+      <mat-card-header>
+        <mat-card-title>Model Usage Distribution</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (Object.keys(stats().modelUsage).length === 0) {
+          <div class="empty-state">
+            <mat-icon>smart_toy</mat-icon>
+            <p>No model usage data yet</p>
+          </div>
+        } @else {
+          <div class="model-usage-list">
+            @for (entry of Object.entries(stats().modelUsage); track entry[0]) {
+              <div class="model-usage-item">
+                <div class="model-info">
+                  <span class="model-name">{{ entry[0] }}</span>
+                  <span class="model-count">{{ entry[1] }} uses</span>
+                </div>
+                <div class="usage-bar">
+                  <div 
+                    class="usage-fill" 
+                    [style.width.%]="getModelUsagePercentage(entry[0])"
+                  ></div>
+                </div>
+                <span class="usage-percentage">{{ getModelUsagePercentage(entry[0]) }}%</span>
+              </div>
+            }
+          </div>
+
+          <div class="model-insights">
+            <mat-chip-set>
+              <mat-chip>
+                <mat-icon>star</mat-icon>
+                Most Used: {{ getMostUsedModel() }}
+              </mat-chip>
+              @if (getMaxActivityDay() !== 'N/A') {
+                <mat-chip>
+                  <mat-icon>calendar_today</mat-icon>
+                  Peak Activity: {{ getMaxActivityDay() }}
+                </mat-chip>
+              }
+            </mat-chip-set>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Activity Over Time -->
+    <mat-card class="activity-card">
+      <mat-card-header>
+        <mat-card-title>Activity Over Last 7 Days</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (stats().executionsByDay.length === 0) {
+          <div class="empty-state">
+            <mat-icon>bar_chart</mat-icon>
+            <p>No activity data yet</p>
+          </div>
+        } @else {
+          <div class="activity-chart">
+            @for (day of stats().executionsByDay; track day.date) {
+              <div class="day-column">
+                <div class="bar-container">
+                  <div 
+                    class="bar" 
+                    [style.height.%]="day.count > 0 ? (day.count / Math.max(...stats().executionsByDay.map(d => d.count)) * 100) : 5"
+                    [class.has-activity]="day.count > 0"
+                  >
+                    <span class="bar-value">{{ day.count }}</span>
+                  </div>
+                </div>
+                <span class="day-label">{{ day.date.slice(5) }}</span>
+              </div>
+            }
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Recent Activity -->
+    <mat-card class="recent-activity-card">
+      <mat-card-header>
+        <mat-card-title>Recent Activity</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (executions().length === 0 && conversations().length === 0) {
+          <div class="empty-state">
+            <mat-icon>history</mat-icon>
+            <p>No recent activity</p>
+          </div>
+        } @else {
+          <div class="activity-list">
+            @for (execution of executions().slice(0, 5); track execution.id) {
+              <div class="activity-item">
+                <mat-icon class="activity-icon execution">play_circle_outline</mat-icon>
+                <div class="activity-details">
+                  <div class="activity-title">Prompt Execution</div>
+                  <div class="activity-meta">
+                    {{ execution.model }} • {{ execution.timestamp | date:'short' }}
+                  </div>
+                </div>
+                <div class="activity-stats">
+                  <mat-chip>{{ execution.tokens.total }} tokens</mat-chip>
+                  <mat-chip>{{ execution.latency }}ms</mat-chip>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Actions -->
+    <mat-card class="actions-card">
+      <mat-card-header>
+        <mat-card-title>Dashboard Actions</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="action-buttons">
+          <button mat-raised-button color="warn" (click)="clearAllData()">
+            <mat-icon>delete_forever</mat-icon>
+            Clear All Data
+          </button>
+          <button mat-stroked-button disabled>
+            <mat-icon>file_download</mat-icon>
+            Export Report (Coming Soon)
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

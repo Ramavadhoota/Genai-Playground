@@ -1,0 +1,189 @@
+.prompt-playground {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+.playground-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: white;
+  
+  h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  p {
+    font-size: 1.2rem;
+    opacity: 0.9;
+  }
+}
+
+.playground-container {
+  display: grid;
+  gap: 1.5rem;
+}
+
+mat-card {
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.config-panel {
+  .config-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    
+    label {
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.87);
+    }
+    
+    .slider-hint {
+      font-size: 0.875rem;
+      color: rgba(0, 0, 0, 0.6);
+    }
+  }
+}
+
+.prompt-card {
+  .prompt-field {
+    width: 100%;
+    
+    textarea {
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+  }
+  
+  .prompt-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    
+    button {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1.5rem;
+      
+      mat-spinner {
+        margin-right: 0.5rem;
+      }
+    }
+  }
+}
+
+.response-card {
+  .response-content {
+    background: #f5f5f5;
+    padding: 1.5rem;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+  
+  .response-metadata {
+    margin-top: 1rem;
+    
+    mat-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+  }
+}
+
+.history-card {
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .history-item {
+    padding: 1rem;
+    background: #f9f9f9;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: #e8e8e8;
+      transform: translateX(4px);
+    }
+    
+    .history-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      
+      .history-prompt {
+        font-weight: 500;
+        flex: 1;
+      }
+    }
+    
+    .history-item-meta {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.875rem;
+      color: rgba(0, 0, 0, 0.6);
+      
+      span {
+        display: flex;
+        align-items: center;
+      }
+    }
+  }
+}
+
+mat-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .prompt-playground {
+    padding: 1rem;
+  }
+  
+  .playground-header h1 {
+    font-size: 2rem;
+  }
+  
+  .prompt-actions {
+    flex-direction: column;
+    
+    button {
+      width: 100%;
+    }
+  }
+}

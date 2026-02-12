@@ -1,0 +1,120 @@
+<div class="chat-interface">
+  <div class="chat-header">
+    <h1>Chat Interface</h1>
+    <p>Have a conversation with AI models</p>
+  </div>
+
+  <div class="chat-container">
+    @if (!currentConversation()) {
+      <mat-card class="welcome-card">
+        <mat-card-content>
+          <div class="welcome-content">
+            <mat-icon class="welcome-icon">chat_bubble_outline</mat-icon>
+            <h2>Start a New Conversation</h2>
+            <p>Select a model and begin chatting with AI</p>
+            
+            <mat-form-field appearance="outline">
+              <mat-label>Select Model</mat-label>
+              <mat-select [(ngModel)]="selectedModel">
+                @for (model of availableModels; track model.name) {
+                  <mat-option [value]="model.name">
+                    {{ model.displayName }} ({{ model.provider }})
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <button mat-raised-button color="primary" (click)="startNewConversation()">
+              <mat-icon>add_comment</mat-icon>
+              Start Chat
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    } @else {
+      <mat-card class="chat-card">
+        <mat-card-header>
+          <div class="chat-card-header">
+            <div class="header-info">
+              <mat-card-title>{{ currentConversation()!.title }}</mat-card-title>
+              <mat-chip-set>
+                <mat-chip>{{ selectedModel }}</mat-chip>
+                <mat-chip>{{ currentConversation()!.messages.length }} messages</mat-chip>
+              </mat-chip-set>
+            </div>
+            <button mat-icon-button (click)="clearConversation()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="messages-container" #messagesContainer>
+            @for (message of currentConversation()!.messages; track message.id) {
+              <div class="message" [class.user-message]="message.role === 'user'" [class.assistant-message]="message.role === 'assistant'">
+                <div class="message-header">
+                  <div class="message-role">
+                    <mat-icon>{{ message.role === 'user' ? 'person' : 'smart_toy' }}</mat-icon>
+                    <span>{{ message.role === 'user' ? 'You' : 'AI' }}</span>
+                  </div>
+                  <div class="message-actions">
+                    @if (message.latency) {
+                      <span class="message-meta">{{ message.latency }}ms</span>
+                    }
+                    <button mat-icon-button (click)="copyMessage(message.content)">
+                      <mat-icon>content_copy</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <div class="message-content">
+                  {{ message.content }}
+                </div>
+                <div class="message-timestamp">
+                  {{ message.timestamp | date:'short' }}
+                </div>
+              </div>
+            }
+
+            @if (loading()) {
+              <div class="message assistant-message loading-message">
+                <div class="message-header">
+                  <div class="message-role">
+                    <mat-icon>smart_toy</mat-icon>
+                    <span>AI</span>
+                  </div>
+                </div>
+                <div class="message-content">
+                  <mat-spinner diameter="24"></mat-spinner>
+                  <span>Thinking...</span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="input-container">
+            <mat-form-field appearance="outline" class="message-input">
+              <mat-label>Type your message</mat-label>
+              <textarea
+                matInput
+                [(ngModel)]="messageInput"
+                (keypress)="onKeyPress($event)"
+                rows="3"
+                placeholder="Ask me anything..."
+                [disabled]="loading()"
+              ></textarea>
+            </mat-form-field>
+            <button 
+              mat-fab 
+              color="primary" 
+              (click)="sendMessage()" 
+              [disabled]="!messageInput.trim() || loading()"
+              class="send-button"
+            >
+              <mat-icon>send</mat-icon>
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+</div>

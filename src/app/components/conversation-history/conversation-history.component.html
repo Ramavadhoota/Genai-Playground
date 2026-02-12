@@ -1,0 +1,112 @@
+<div class="conversation-history">
+  <div class="history-header">
+    <h1>Conversation History</h1>
+    <p>Browse and manage your chat conversations</p>
+  </div>
+
+  <div class="history-container">
+    <mat-card class="search-card">
+      <mat-card-content>
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Search conversations</mat-label>
+          <input matInput [(ngModel)]="searchQuery" placeholder="Search by title or content...">
+          <mat-icon matPrefix>search</mat-icon>
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+
+    @if (filteredConversations.length === 0) {
+      <mat-card class="empty-state">
+        <mat-card-content>
+          <mat-icon class="empty-icon">chat_bubble_outline</mat-icon>
+          <h2>No Conversations Found</h2>
+          <p>{{ searchQuery ? 'Try a different search term' : 'Start chatting to see conversations here' }}</p>
+        </mat-card-content>
+      </mat-card>
+    } @else {
+      <div class="conversations-grid">
+        @for (conversation of filteredConversations; track conversation.id) {
+          <mat-card class="conversation-card">
+            <mat-card-header (click)="toggleExpand(conversation.id)">
+              <div class="conversation-card-header">
+                <div class="header-main">
+                  <mat-card-title>{{ conversation.title }}</mat-card-title>
+                  <p class="conversation-summary">{{ getConversationSummary(conversation) }}</p>
+                </div>
+                <div class="header-actions">
+                  <button mat-icon-button (click)="exportConversation(conversation, $event)">
+                    <mat-icon>download</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="deleteConversation(conversation.id, $event)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                  <button mat-icon-button>
+                    <mat-icon>{{ expandedConversation() === conversation.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </mat-card-header>
+
+            <mat-card-content>
+              <div class="conversation-metadata">
+                <mat-chip-set>
+                  <mat-chip>
+                    <mat-icon>smart_toy</mat-icon>
+                    {{ conversation.model }}
+                  </mat-chip>
+                  <mat-chip>
+                    <mat-icon>chat</mat-icon>
+                    {{ conversation.messages.length }} messages
+                  </mat-chip>
+                  <mat-chip>
+                    <mat-icon>token</mat-icon>
+                    {{ getTotalTokens(conversation) }} tokens
+                  </mat-chip>
+                  @if (getAveragLatency(conversation) > 0) {
+                    <mat-chip>
+                      <mat-icon>schedule</mat-icon>
+                      {{ getAveragLatency(conversation) }}ms avg
+                    </mat-chip>
+                  }
+                </mat-chip-set>
+
+                <div class="conversation-dates">
+                  <span>Created: {{ conversation.createdAt | date:'short' }}</span>
+                  <span>Updated: {{ conversation.updatedAt | date:'short' }}</span>
+                </div>
+              </div>
+
+              @if (expandedConversation() === conversation.id) {
+                <div class="messages-list">
+                  @for (message of conversation.messages; track message.id) {
+                    <div class="message-item" [class.user-message]="message.role === 'user'">
+                      <div class="message-header">
+                        <div class="message-role">
+                          <mat-icon>{{ message.role === 'user' ? 'person' : 'smart_toy' }}</mat-icon>
+                          <span>{{ message.role === 'user' ? 'You' : 'AI' }}</span>
+                        </div>
+                        <button mat-icon-button (click)="copyMessage(message.content, $event)">
+                          <mat-icon>content_copy</mat-icon>
+                        </button>
+                      </div>
+                      <div class="message-content">{{ message.content }}</div>
+                      <div class="message-footer">
+                        <span>{{ message.timestamp | date:'medium' }}</span>
+                        @if (message.tokens) {
+                          <span>{{ message.tokens }} tokens</span>
+                        }
+                        @if (message.latency) {
+                          <span>{{ message.latency }}ms</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+    }
+  </div>
+</div>

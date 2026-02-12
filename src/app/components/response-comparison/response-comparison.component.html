@@ -1,0 +1,201 @@
+<div class="response-comparison">
+  <div class="comparison-header">
+    <h1>Response Comparison</h1>
+    <p>Compare how different models respond to the same prompt</p>
+  </div>
+
+  <div class="comparison-container">
+    <!-- Configuration Panel -->
+    <mat-card class="config-card">
+      <mat-card-header>
+        <mat-card-title>Configuration</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-form-field appearance="outline">
+          <mat-label>Select Models to Compare (min 2)</mat-label>
+          <mat-select [(ngModel)]="selectedModels" multiple>
+            @for (model of availableModels; track model.name) {
+              <mat-option [value]="model.name">
+                {{ model.displayName }} ({{ model.provider }})
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <div class="slider-group">
+          <label>Temperature: {{ formatTemperature(temperature) }}</label>
+          <mat-slider min="0" max="2" step="0.1" discrete>
+            <input matSliderThumb [(ngModel)]="temperature">
+          </mat-slider>
+        </div>
+
+        <div class="slider-group">
+          <label>Max Tokens: {{ maxTokens }}</label>
+          <mat-slider min="100" max="4000" step="100" discrete>
+            <input matSliderThumb [(ngModel)]="maxTokens">
+          </mat-slider>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Prompt Input -->
+    <mat-card class="prompt-card">
+      <mat-card-header>
+        <mat-card-title>Prompt</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-form-field appearance="outline" class="prompt-field">
+          <mat-label>Enter your prompt</mat-label>
+          <textarea
+            matInput
+            [(ngModel)]="prompt"
+            rows="6"
+            placeholder="Type your prompt here..."
+            [disabled]="loading()"
+          ></textarea>
+        </mat-form-field>
+
+        <div class="prompt-actions">
+          <button 
+            mat-raised-button 
+            color="primary" 
+            (click)="compareResponses()" 
+            [disabled]="!prompt.trim() || selectedModels.length < 2 || loading()"
+          >
+            @if (loading()) {
+              <mat-spinner diameter="20"></mat-spinner>
+              <span>Comparing...</span>
+            } @else {
+              <mat-icon>compare_arrows</mat-icon>
+              <span>Compare</span>
+            }
+          </button>
+          <button mat-stroked-button (click)="clearComparison()" [disabled]="loading()">
+            <mat-icon>clear</mat-icon>
+            <span>Clear</span>
+          </button>
+        </div>
+
+        @if (selectedModels.length < 2 && selectedModels.length > 0) {
+          <p class="warning-message">Please select at least 2 models to compare</p>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Comparison Results -->
+    @if (currentComparison()) {
+      <mat-card class="results-card">
+        <mat-card-header>
+          <mat-card-title>Comparison Results</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-tab-group>
+            <!-- Side-by-side View -->
+            <mat-tab label="Side-by-Side">
+              <div class="side-by-side-view">
+                @for (execution of currentComparison()!.executions; track execution.id) {
+                  <div class="response-panel">
+                    <div class="panel-header">
+                      <h3>{{ execution.model }}</h3>
+                      <button mat-icon-button (click)="copyResponse(execution.response)">
+                        <mat-icon>content_copy</mat-icon>
+                      </button>
+                    </div>
+                    <div class="response-content">
+                      {{ execution.response }}
+                    </div>
+                    <div class="response-stats">
+                      <mat-chip-set>
+                        <mat-chip>
+                          <mat-icon>schedule</mat-icon>
+                          {{ execution.latency }}ms
+                        </mat-chip>
+                        <mat-chip>
+                          <mat-icon>token</mat-icon>
+                          {{ execution.tokens.total }}
+                        </mat-chip>
+                      </mat-chip-set>
+                    </div>
+                  </div>
+                }
+              </div>
+            </mat-tab>
+
+            <!-- Metrics Table -->
+            <mat-tab label="Metrics">
+              <div class="metrics-view">
+                <table mat-table [dataSource]="getMetricsComparison()" class="metrics-table">
+                  <ng-container matColumnDef="metric">
+                    <th mat-header-cell *matHeaderCellDef>Metric</th>
+                    <td mat-cell *matCellDef="let row" class="metric-name">{{ row.metric }}</td>
+                  </ng-container>
+
+                  @for (model of selectedModels; track model) {
+                    <ng-container [matColumnDef]="model">
+                      <th mat-header-cell *matHeaderCellDef>{{ model }}</th>
+                      <td mat-cell *matCellDef="let row" 
+                          [class.best-value]="getBestModel(row.metric) === model">
+                        {{ row[model] || 'N/A' }}
+                        @if (getBestModel(row.metric) === model) {
+                          <mat-icon class="best-icon">star</mat-icon>
+                        }
+                      </td>
+                    </ng-container>
+                  }
+
+                  <tr mat-header-row *matHeaderRowDef="['metric', ...selectedModels]"></tr>
+                  <tr mat-row *matRowDef="let row; columns: ['metric', ...selectedModels]"></tr>
+                </table>
+              </div>
+            </mat-tab>
+
+            <!-- Full Responses -->
+            <mat-tab label="Full Responses">
+              <div class="full-responses-view">
+                @for (execution of currentComparison()!.executions; track execution.id) {
+                  <div class="full-response">
+                    <h3>{{ execution.model }}</h3>
+                    <div class="response-content-full">
+                      {{ execution.response }}
+                    </div>
+                  </div>
+                }
+              </div>
+            </mat-tab>
+          </mat-tab-group>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Comparison History -->
+    @if (comparisonHistory().length > 0) {
+      <mat-card class="history-card">
+        <mat-card-header>
+          <mat-card-title>Recent Comparisons</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="history-list">
+            @for (comparison of comparisonHistory(); track comparison.id) {
+              <div class="history-item" (click)="loadFromHistory(comparison)">
+                <div class="history-item-header">
+                  <span class="history-prompt">{{ comparison.prompt.slice(0, 80) }}...</span>
+                  <button mat-icon-button (click)="deleteFromHistory(comparison.id, $event)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+                <div class="history-item-meta">
+                  <mat-chip-set>
+                    @for (execution of comparison.executions; track execution.id) {
+                      <mat-chip>{{ execution.model }}</mat-chip>
+                    }
+                  </mat-chip-set>
+                  <span>{{ comparison.createdAt | date:'short' }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+</div>
