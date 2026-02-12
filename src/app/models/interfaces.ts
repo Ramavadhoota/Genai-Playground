@@ -44,7 +44,7 @@ export interface ComparisonResult {
 
 export interface ModelConfig {
   name: string;
-  provider: 'openai' | 'huggingface' | 'anthropic';
+  provider: 'openai' | 'huggingface' | 'anthropic' | 'google';
   displayName: string;
   maxTokens: number;
   supportsStreaming: boolean;

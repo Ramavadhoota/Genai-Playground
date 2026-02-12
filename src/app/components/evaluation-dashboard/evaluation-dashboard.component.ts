@@ -33,6 +33,9 @@ interface DashboardStats {
 export class EvaluationDashboardComponent {
   private genAIService = inject(GenAIService);
 
+  // Expose Object to template
+  Object = Object;
+
   stats = signal<DashboardStats>({
     totalExecutions: 0,
     totalConversations: 0,
@@ -166,5 +169,10 @@ export class EvaluationDashboardComponent {
       month: 'short', 
       day: 'numeric' 
     });
+  }
+
+  getBarHeightPercentage(count: number): number {
+    const maxCount = Math.max(...this.stats().executionsByDay.map(d => d.count), 1);
+    return count > 0 ? (count / maxCount * 100) : 5;
   }
 }

@@ -49,7 +49,7 @@ export class ResponseComparisonComponent {
   comparisonHistory = signal<ComparisonResult[]>([]);
 
   availableModels = this.genAIService.availableModels;
-  displayedColumns: string[] = ['metric', ...this.availableModels.map(m => m.name)];
+  displayedColumns = signal<string[]>(['metric']);
 
   ngOnInit() {
     this.genAIService.comparisons$.subscribe(comparisons => {
@@ -62,6 +62,9 @@ export class ResponseComparisonComponent {
 
     this.loading.set(true);
     this.currentComparison.set(null);
+    
+    // Update displayed columns based on selected models
+    this.displayedColumns.set(['metric', ...this.selectedModels]);
 
     this.genAIService.comparePromptAcrossModels(
       this.prompt,

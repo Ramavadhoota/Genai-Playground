@@ -134,7 +134,7 @@
                 <div class="bar-container">
                   <div 
                     class="bar" 
-                    [style.height.%]="day.count > 0 ? (day.count / Math.max(...stats().executionsByDay.map(d => d.count)) * 100) : 5"
+                    [style.height.%]="getBarHeightPercentage(day.count)"
                     [class.has-activity]="day.count > 0"
                   >
                     <span class="bar-value">{{ day.count }}</span>

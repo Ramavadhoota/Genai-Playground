@@ -33,6 +33,20 @@ export class GenAIService {
   // Available models
   availableModels: ModelConfig[] = [
     {
+      name: 'gemini-1.5-pro',
+      provider: 'google',
+      displayName: 'Gemini 1.5 Pro',
+      maxTokens: 8192,
+      supportsStreaming: true
+    },
+    {
+      name: 'gemini-1.5-flash',
+      provider: 'google',
+      displayName: 'Gemini 1.5 Flash',
+      maxTokens: 4096,
+      supportsStreaming: true
+    },
+    {
       name: 'gpt-4',
       provider: 'openai',
       displayName: 'GPT-4',
@@ -62,6 +76,9 @@ export class GenAIService {
     }
   ];
 
+  private geminiApiKey = this.getApiKey();
+  private geminiApiUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
+
   constructor() {
     this.loadFromLocalStorage();
   }
@@ -75,13 +92,20 @@ export class GenAIService {
   ): Observable<PromptExecution> {
     const startTime = Date.now();
     
-    // Mock implementation - replace with actual API call
-    return this.mockAPICall({
-      prompt,
-      model,
-      temperature,
-      max_tokens: maxTokens
-    }).pipe(
+    // Use Gemini API for Gemini models, mock for others
+    let apiCall$: Observable<any>;
+    if (model.startsWith('gemini')) {
+      apiCall$ = this.callGeminiAPI(prompt, model, temperature, maxTokens);
+    } else {
+      apiCall$ = this.mockAPICall({
+        prompt,
+        model,
+        temperature,
+        max_tokens: maxTokens
+      });
+    }
+    
+    return apiCall$.pipe(
       map(response => {
         const execution: PromptExecution = {
           id: this.generateId(),
@@ -129,10 +153,18 @@ export class GenAIService {
 
     const startTime = Date.now();
 
-    return this.mockChatAPICall({
-      messages: messages.map(m => ({ role: m.role, content: m.content })),
-      model
-    }).pipe(
+    // Use Gemini API for Gemini models, mock for others
+    let apiCall$: Observable<any>;
+    if (model.startsWith('gemini')) {
+      apiCall$ = this.callGeminiChatAPI(messages, model);
+    } else {
+      apiCall$ = this.mockChatAPICall({
+        messages: messages.map(m => ({ role: m.role, content: m.content })),
+        model
+      });
+    }
+
+    return apiCall$.pipe(
       map(response => {
         const assistantMessage: Message = {
           id: this.generateId(),
@@ -394,5 +426,115 @@ export class GenAIService {
     this.executionsSubject.next([]);
     this.comparisonsSubject.next([]);
     localStorage.clear();
+  }
+
+  // Gemini API calls
+  private callGeminiAPI(
+    prompt: string,
+    model: string,
+    temperature: number,
+    maxTokens: number
+  ): Observable<any> {
+    if (!this.geminiApiKey) {
+      return throwError(() => new Error('Gemini API key not configured'));
+    }
+
+    const url = `${this.geminiApiUrl}/${model}:generateContent?key=${this.geminiApiKey}`;
+    const body = {
+      contents: [
+        {
+          parts: [
+            {
+              text: prompt
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature,
+        maxOutputTokens: maxTokens
+      }
+    };
+
+    return this.http.post<any>(url, body).pipe(
+      map(response => {
+        const content = response.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+        const tokenCount = response.usageMetadata?.totalTokenCount || 0;
+        const inputTokens = response.usageMetadata?.promptTokenCount || 0;
+        const outputTokens = response.usageMetadata?.candidatesTokenCount || 0;
+
+        return {
+          content,
+          usage: {
+            prompt_tokens: inputTokens,
+            completion_tokens: outputTokens,
+            total_tokens: tokenCount
+          }
+        };
+      }),
+      catchError(error => {
+        console.error('Gemini API error:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  private callGeminiChatAPI(
+    messages: Message[],
+    model: string
+  ): Observable<any> {
+    if (!this.geminiApiKey) {
+      return throwError(() => new Error('Gemini API key not configured'));
+    }
+
+    const url = `${this.geminiApiUrl}/${model}:generateContent?key=${this.geminiApiKey}`;
+    
+    // Convert conversation format to Gemini format
+    const contents = messages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [
+        {
+          text: m.content
+        }
+      ]
+    }));
+
+    const body = {
+      contents,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2048
+      }
+    };
+
+    return this.http.post<any>(url, body).pipe(
+      map(response => {
+        const content = response.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+        const tokenCount = response.usageMetadata?.totalTokenCount || 0;
+
+        return {
+          content,
+          usage: {
+            total_tokens: tokenCount
+          }
+        };
+      }),
+      catchError(error => {
+        console.error('Gemini API error:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  private getApiKey(): string {
+    // Try to get from environment or localStorage
+    const envKey = (window as any).GEMINI_API_KEY;
+    const storedKey = localStorage.getItem('gemini_api_key');
+    return envKey || storedKey || '';
+  }
+
+  setGeminiApiKey(key: string): void {
+    this.geminiApiKey = key;
+    localStorage.setItem('gemini_api_key', key);
   }
 }
