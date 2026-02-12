@@ -335,17 +335,9 @@ This project is licensed under the MIT License.
 
 For questions or issues:
 - Open an issue on GitHub
-- Contact: [your-email@example.com]
+- Contact: sushantharishi@gmail.com
 
-## 🗺️ Roadmap
 
-- [ ] Real-time streaming responses
-- [ ] File upload for RAG functionality
-- [ ] Export data as CSV/PDF
-- [ ] Custom model configuration
-- [ ] Team collaboration features
-- [ ] Advanced analytics and charting
-- [ ] Mobile app version
 
 ---
 
